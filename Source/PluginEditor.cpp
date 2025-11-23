@@ -80,6 +80,7 @@ public:
             if (val.isString())
             {
                 // Try to find item with this text
+                // JUCE ComboBox doesn't have a direct "setSelectedText", so we loop
                 bool found = false;
                 for (int i=0; i<c->getNumItems(); ++i)
                 {
@@ -177,7 +178,11 @@ public:
         // 2. Children (Complex params)
         for (const auto& child : effectTree)
         {
-            auto name = child.getType().toString();
+            auto name = child.getType().toString(); // Use node type as param name? Or name property?
+            // In our schema: gain_db: { ... } -> Child name is "gain_db" (if we used property name as tag)
+            // But yamlToValueTree uses the key as the tag name if it's a map.
+            // So child.getType() is the parameter name.
+
             auto* comp = new DynamicParameterComponent(name, child);
             params.add(comp);
             addAndMakeVisible(comp);
@@ -223,30 +228,21 @@ PresetEngineAudioProcessorEditor::PresetEngineAudioProcessorEditor (PresetEngine
     titleLabel.setFont(juce::Font(20.0f, juce::Font::bold));
     addAndMakeVisible(titleLabel);
 
-    // Toggle View Button
-    toggleViewButton.setButtonText("Switch to Visual View");
-    toggleViewButton.onClick = [this] {
-        isVisualMode = !isVisualMode;
-        toggleViewButton.setButtonText(isVisualMode ? "Switch to Code View" : "Switch to Visual View");
-        updateViewVisibility();
-    };
-    addAndMakeVisible(toggleViewButton);
-
     // Viewport for Dynamic UI
-    addChildComponent(viewport);
+    addAndMakeVisible(viewport);
     viewport.setScrollBarsShown(true, false);
 
     // Container for effects
     container.reset(new juce::Component());
     viewport.setViewedComponent(container.get(), false);
 
-    // Code Editor Components
+    // Code Editor
     languageBox.addItem("YAML", 1);
     languageBox.addItem("JSON", 2);
     languageBox.addItem("XML", 3);
     languageBox.addItem("Python", 4);
     languageBox.setSelectedId(1); // Default YAML
-    addChildComponent(languageBox);
+    addAndMakeVisible(languageBox);
 
     exampleButton.setButtonText("Load Example");
     exampleButton.onClick = [this] {
@@ -265,7 +261,7 @@ PresetEngineAudioProcessorEditor::PresetEngineAudioProcessorEditor (PresetEngine
                      "  mode: LowPass\n"
                      "  frequency: 1000.0";
         }
-        else if (id == 2) // JSON
+        else if (id == 2) // JSON - Direct Plugin Usage
         {
             example = "[\n"
                      "  {\n"
@@ -274,39 +270,71 @@ PresetEngineAudioProcessorEditor::PresetEngineAudioProcessorEditor (PresetEngine
                      "      \"value\": -6.0,\n"
                      "      \"ui\": \"Slider\"\n"
                      "    }\n"
+                     "  },\n"
+                     "  {\n"
+                     "    \"type\": \"Filter\",\n"
+                     "    \"mode\": \"LowPass\",\n"
+                     "    \"frequency\": 1000.0\n"
                      "  }\n"
                      "]";
         }
+        else if (id == 3) // XML - Direct Plugin Usage
+        {
+            example = "<EffectChain>\n"
+                     "  <Effect type=\"Gain\">\n"
+                     "    <gain_db value=\"-6.0\" ui=\"Slider\"/>\n"
+                     "  </Effect>\n"
+                     "  <Effect type=\"Filter\" mode=\"LowPass\" frequency=\"1000.0\"/>\n"
+                     "</EffectChain>";
+        }
+        else if (id == 4) // Python - SDK Generator (NOT for direct paste)
+        {
+            example = "# SDK USAGE - Run this Python script to GENERATE a preset file\n"
+                     "# Then load the generated .yaml/.json file into the plugin\n"
+                     "#\n"
+                     "# See: sdk/python/example_generator.py\n"
+                     "\n"
+                     "from preset_engine import Chain, Gain, Filter\n"
+                     "\n"
+                     "chain = Chain()\n"
+                     "chain.add(Gain(db=-6.0, ui=True))\n"
+                     "chain.add(Filter(mode=\"LowPass\", freq=1000.0))\n"
+                     "\n"
+                     "# Output YAML to paste into plugin:\n"
+                     "print(chain.to_yaml())";
+        }
         codeEditor.setText(example);
     };
-    addChildComponent(exampleButton);
+    addAndMakeVisible(exampleButton);
 
     codeEditor.setMultiLine(true);
     codeEditor.setReturnKeyStartsNewLine(true);
     codeEditor.setTabKeyUsedAsCharacter(true);
     codeEditor.setFont(juce::Font(juce::Font::getDefaultMonospacedFontName(), 14.0f, juce::Font::plain));
 
+    // Only set text if empty (first run)
     if (audioProcessor.getCurrentConfig().isEmpty())
         exampleButton.triggerClick();
     else
         codeEditor.setText(audioProcessor.getCurrentConfig());
 
-    addChildComponent(codeEditor);
+    addAndMakeVisible(codeEditor);
 
+    // Status & Button
     statusLabel.setText("Ready.", juce::dontSendNotification);
-    addAndMakeVisible(statusLabel); // Always visible
+    addAndMakeVisible(statusLabel);
 
-    applyButton.setButtonText("Apply Configuration");
+    applyButton.setButtonText("Apply");
     applyButton.onClick = [this] {
+        // Pass the selected language ID as a hint?
+        // For now, we'll let the processor auto-detect, but we could prefix the code.
+        // Actually, let's just pass the text. The parser will handle it.
         auto result = audioProcessor.loadConfig(codeEditor.getText());
         if (result.wasOk())
         {
-            statusLabel.setText("Configuration Loaded Successfully.", juce::dontSendNotification);
+            statusLabel.setText("Loaded.", juce::dontSendNotification);
             statusLabel.setColour(juce::Label::textColourId, juce::Colours::lightgreen);
             rebuildUi();
-
-            // Auto switch to visual if successful?
-            // Or just notify user. Let's stay in code view.
         }
         else
         {
@@ -314,32 +342,16 @@ PresetEngineAudioProcessorEditor::PresetEngineAudioProcessorEditor (PresetEngine
             statusLabel.setColour(juce::Label::textColourId, juce::Colours::red);
         }
     };
-    addChildComponent(applyButton);
+    addAndMakeVisible(applyButton);
 
     // Initial build
     rebuildUi();
-    updateViewVisibility();
 }
 
 PresetEngineAudioProcessorEditor::~PresetEngineAudioProcessorEditor()
 {
     setLookAndFeel(nullptr);
     viewport.setViewedComponent(nullptr, false);
-}
-
-void PresetEngineAudioProcessorEditor::updateViewVisibility()
-{
-    // Visual Mode components
-    viewport.setVisible(isVisualMode);
-
-    // Code Mode components
-    bool isCode = !isVisualMode;
-    languageBox.setVisible(isCode);
-    exampleButton.setVisible(isCode);
-    codeEditor.setVisible(isCode);
-    applyButton.setVisible(isCode);
-
-    resized();
 }
 
 void PresetEngineAudioProcessorEditor::rebuildUi()
@@ -376,40 +388,31 @@ void PresetEngineAudioProcessorEditor::resized()
     auto area = getLocalBounds().reduced(10);
 
     // Header
-    auto headerArea = area.removeFromTop(30);
-    titleLabel.setBounds(headerArea.removeFromLeft(200));
-    toggleViewButton.setBounds(headerArea.removeFromRight(200));
+    titleLabel.setBounds(area.removeFromTop(30));
 
-    area.removeFromTop(10);
+    // Footer
+    auto footer = area.removeFromBottom(180); // Increased for language selector
 
-    // Footer: Status always visible at bottom
-    auto footerArea = area.removeFromBottom(25);
-    statusLabel.setBounds(footerArea);
+    // Top row: Language selector + Example button
+    auto topRow = footer.removeFromTop(30);
+    languageBox.setBounds(topRow.removeFromLeft(120));
+    topRow.removeFromLeft(5);
+    exampleButton.setBounds(topRow.removeFromLeft(120));
 
-    if (isVisualMode)
-    {
-        viewport.setBounds(area);
-        if (container)
-            container->setSize(viewport.getWidth() - 20, container->getHeight());
-    }
-    else
-    {
-        // Code View Layout
+    footer.removeFromTop(5);
 
-        // Controls Row
-        auto controlsArea = area.removeFromTop(30);
-        languageBox.setBounds(controlsArea.removeFromLeft(120));
-        controlsArea.removeFromLeft(10);
-        exampleButton.setBounds(controlsArea.removeFromLeft(120));
+    // Second row: Apply button + Status
+    auto buttonArea = footer.removeFromTop(30);
+    applyButton.setBounds(buttonArea.removeFromRight(150));
+    statusLabel.setBounds(buttonArea);
 
-        area.removeFromTop(10);
+    footer.removeFromTop(5);
+    codeEditor.setBounds(footer);
 
-        // Apply Button Area
-        auto applyArea = area.removeFromBottom(40);
-        applyButton.setBounds(applyArea.removeFromRight(150));
+    // Main UI
+    area.removeFromBottom(10);
+    viewport.setBounds(area);
 
-        area.removeFromBottom(10);
-
-        codeEditor.setBounds(area);
-    }
+    if (container)
+        container->setSize(viewport.getWidth() - 20, container->getHeight());
 }

@@ -1,99 +1,114 @@
-# Preset Engine Plugin
+# PresetEngine
 
-A modular, dynamically configurable VST3 audio plugin built with JUCE. This plugin allows you to define your audio processing chain using simple text configuration (YAML/JSON/XML) or interact with it using a generated visual interface.
+**The Declarative, Modular Audio Effect Engine.**
 
-![Visual View](screenshot_visual.png)
+PresetEngine is a revolutionary VST3 audio plugin that transforms simple text configurations into professional-grade audio processing chains and user interfaces. It empowers sound designers, developers, and producers to prototype, build, and share complex audio effects without writing a single line of C++.
 
-## Features
+![PresetEngine Banner](https://via.placeholder.com/800x200?text=PresetEngine+Dynamic+VST3)
 
-*   **Modular Architecture**: Construct your signal chain from a library of building blocks.
-*   **Dynamic Configuration**: Define your chain using YAML code. The plugin dynamically instantiates and routes the effects.
-*   **Dual Interface**:
-    *   **Code View**: Text editor for precise configuration and preset definition.
-    *   **Visual View**: Automatically generated UI with sliders/knobs for all active parameters.
-*   **Supported Formats**: YAML, JSON, and XML configuration parsing.
+## 🚀 Why PresetEngine?
 
-## Available Modules
+Traditional plugin development requires compiling C++ code for every small change. PresetEngine acts as a dynamic runtime:
+1.  **You write text** (YAML/JSON/XML).
+2.  **PresetEngine builds** the DSP graph and the UI instantly.
 
-The following audio effect modules are available for use in your chain:
+It's perfect for:
+*   **Rapid Prototyping**: Test an EQ chain or a multi-band compressor in seconds.
+*   **Education**: Learn signal flow by seeing how modules connect.
+*   **Presets**: Share entire plugin structures as small text snippets.
 
-*   **Gain**: Simple volume control.
-*   **Filter**: Multi-mode IIR filter (LowPass, HighPass, BandPass, etc.).
-*   **Compressor**: Dynamic range compressor.
-*   **Limiter**: Peak limiter.
-*   **Delay**: Stereo delay line with feedback and mix.
-*   **Distortion**: Waveshaper overdrive/distortion.
-*   **Phaser**: Modulation effect.
-*   **Chorus**: Modulation effect.
-*   **Reverb**: Algorithmic reverb.
-*   **NoiseGate**: Simple noise gate.
-*   **Panner**: Stereo panner.
-*   **LadderFilter**: Moog-style ladder filter emulation.
+## ✨ Key Features
 
-## Usage
+*   **📄 Modular Architecture**: Build chains from a library of studio-quality blocks (EQ, Dynamics, Reverb, etc.).
+*   **⚡ Hot-Swap DSP**: Change the order of effects or add new ones on the fly without restarting your DAW.
+*   **🎨 Auto-GUI**: The UI creates itself. Define a parameter as `ui: Slider`, and a rotary knob appears.
+*   **🔀 Advanced Routing**: Support for Series, Parallel, and Loop processing groups.
+*   **🐍 Python SDK**: Generate complex, algorithmic presets programmatically using Python.
 
-### Configuration (Code View)
+## 📦 Included Modules
 
-In the Code View, you can define your chain as a list of objects. Each object must have a `type` property corresponding to a module name. Other properties control the parameters.
+| Category | Modules |
+| :--- | :--- |
+| **Dynamics** | Compressor, Limiter, NoiseGate |
+| **Filter / EQ** | Filter (IIR), LadderFilter (Analog-style) |
+| **Spatial** | Reverb, Delay, Panner |
+| **Modulation** | Chorus, Phaser |
+| **Distortion** | Distortion (WaveShaper), Drive |
+| **Utility** | Gain |
 
-**Example YAML:**
+## 🛠️ Usage Guide
 
+### 1. The Code View
+When you open the plugin, you see the Code Editor. Here you define your chain.
+
+**Example: A "Vocal Chain" Preset**
 ```yaml
-- type: Gain
-  gain: 0.8
+- type: NoiseGate
+  threshold: -45.0
+  ratio: 2.0
 
 - type: Compressor
-  threshold: -12.0
+  threshold: -18.0
   ratio: 4.0
   attack: 10.0
-  release: 100.0
+  release: 80.0
+  ui: Slider        # Exposes this control to the Visual View
 
 - type: Filter
-  type: LowPass
-  frequency: 1000.0
-  q: 0.707
+  type: HighPass
+  frequency: 120.0
 
 - type: Reverb
-  room_size: 0.5
-  wet: 0.3
+  room_size: 0.6
+  wet: 0.2
 ```
 
-![Code View](screenshot_code.png)
+### 2. The Visual View
+Click the **"Switch to Visual View"** button to see the generated interface.
+*   Modules appear as rack units.
+*   Parameters defined in your YAML are interactive knobs and sliders.
+*   Changes here update the sound immediately.
 
-### Visual Control
+## 🐍 Python SDK Integration
 
-Click the toggle button in the top-right corner to switch to the Visual View. This view presents a rack of modules corresponding to your configuration. You can adjust parameters in real-time.
+Want to generate presets algorithmically? Use our Python SDK located in `sdk/python`.
 
-*Note: The visual view controls the parameters of the active chain. To add/remove modules or change their order, switch back to the Code View.*
+```python
+from preset_engine import Chain, Compressor, Reverb
 
-## Build Instructions
+# Create a chain
+chain = Chain()
+chain.add(Compressor(threshold=-20, ratio=4))
+chain.add(Reverb(room_size=0.8, wet=0.4))
+
+# Export to file
+with open("my_preset.yaml", "w") as f:
+    f.write(chain.to_yaml())
+```
+
+## 🏗️ Build Instructions
 
 ### Prerequisites
+*   **CMake** (3.20+)
+*   **C++ Compiler** (C++17 support)
+*   **JUCE Dependencies** (Linux only): `libasound2-dev`, `libx11-dev`, `libxrandr-dev`, `libxinerama-dev`, `libxcursor-dev`, `libgl1-mesa-dev`
 
-*   **CMake** (3.15 or higher)
-*   **C++ Compiler** (supporting C++17)
-*   **JUCE Dependencies** (Linux): `libasound2-dev`, `libx11-dev`, `libxrandr-dev`, `libxinerama-dev`, `libxcursor-dev`, `libgl1-mesa-dev`, `libfreetype6-dev`.
-
-### Building
-
-1.  Clone the repository:
+### Compilation
+1.  **Clone**:
     ```bash
     git clone https://github.com/stancsz/presets.git
     cd presets
     ```
-
-2.  Configure with CMake:
+2.  **Configure**:
     ```bash
     cmake -B build
     ```
-
-3.  Build:
+3.  **Build**:
     ```bash
     cmake --build build --config Release
     ```
+    The VST3 plugin will be in `build/PresetEngine_artefacts/Release/VST3/`.
 
-The built VST3 plugin will be located in the build directory (e.g., `build/PresetEngine_artefacts/Release/VST3/`).
+## 📄 License
 
-## License
-
-This project is licensed under the MIT License.
+This project is open-source and available under the MIT License.
