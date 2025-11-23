@@ -19,42 +19,24 @@ public:
         chorus.reset();
     }
 
-    void configure(const YAML::Node& config) override
-    {
-        if (config["rate"]) { rate = config["rate"].as<float>(); chorus.setRate(rate); }
-        if (config["depth"]) { depth = config["depth"].as<float>(); chorus.setDepth(depth); }
-        if (config["feedback"]) { feedback = config["feedback"].as<float>(); chorus.setFeedback(feedback); }
-        if (config["mix"]) { mix = config["mix"].as<float>(); chorus.setMix(mix); }
-        if (config["delay"]) { centreDelay = config["delay"].as<float>(); chorus.setCentreDelay(centreDelay); }
-    }
-
     void configure(const juce::ValueTree& config) override
     {
-        if (config.hasProperty("rate")) { rate = config.getProperty("rate"); chorus.setRate(rate); }
-        if (config.hasProperty("depth")) { depth = config.getProperty("depth"); chorus.setDepth(depth); }
-        if (config.hasProperty("feedback")) { feedback = config.getProperty("feedback"); chorus.setFeedback(feedback); }
-        if (config.hasProperty("mix")) { mix = config.getProperty("mix"); chorus.setMix(mix); }
-        if (config.hasProperty("delay")) { centreDelay = config.getProperty("delay"); chorus.setCentreDelay(centreDelay); }
-    }
+        if (config.hasProperty("rate") || config.getChildWithName("rate").isValid())
+            chorus.setRate(getParameterValue(config, "rate", 1.0f));
 
-    std::vector<EffectParameter> getParameters() override
-    {
-        return {
-            { "Rate (Hz)", rate, 0.01f, 20.0f, [this](float v) { rate=v; chorus.setRate(v); } },
-            { "Depth", depth, 0.0f, 1.0f, [this](float v) { depth=v; chorus.setDepth(v); } },
-            { "Feedback", feedback, -1.0f, 1.0f, [this](float v) { feedback=v; chorus.setFeedback(v); } },
-            { "Mix", mix, 0.0f, 1.0f, [this](float v) { mix=v; chorus.setMix(v); } },
-            { "Centre Delay (ms)", centreDelay, 1.0f, 100.0f, [this](float v) { centreDelay=v; chorus.setCentreDelay(v); } }
-        };
-    }
+        if (config.hasProperty("depth") || config.getChildWithName("depth").isValid())
+            chorus.setDepth(getParameterValue(config, "depth", 0.25f));
 
-    std::string getName() const override { return "Chorus"; }
+        if (config.hasProperty("delay") || config.getChildWithName("delay").isValid())
+            chorus.setCentreDelay(getParameterValue(config, "delay", 7.0f));
+
+        if (config.hasProperty("feedback") || config.getChildWithName("feedback").isValid())
+            chorus.setFeedback(getParameterValue(config, "feedback", 0.0f));
+
+        if (config.hasProperty("mix") || config.getChildWithName("mix").isValid())
+            chorus.setMix(getParameterValue(config, "mix", 0.5f));
+    }
 
 private:
     juce::dsp::Chorus<float> chorus;
-    float rate = 1.0f;
-    float depth = 0.25f;
-    float feedback = 0.0f;
-    float mix = 0.5f;
-    float centreDelay = 7.0f;
 };

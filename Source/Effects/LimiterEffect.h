@@ -19,30 +19,14 @@ public:
         limiter.reset();
     }
 
-    void configure(const YAML::Node& config) override
-    {
-        if (config["threshold"]) { threshold = config["threshold"].as<float>(); limiter.setThreshold(threshold); }
-        if (config["release"]) { release = config["release"].as<float>(); limiter.setRelease(release); }
-    }
+
 
     void configure(const juce::ValueTree& config) override
     {
-        if (config.hasProperty("threshold")) { threshold = config.getProperty("threshold"); limiter.setThreshold(threshold); }
-        if (config.hasProperty("release")) { release = config.getProperty("release"); limiter.setRelease(release); }
+        if (config.hasProperty("threshold")) limiter.setThreshold(config.getProperty("threshold"));
+        if (config.hasProperty("release")) limiter.setRelease(config.getProperty("release"));
     }
-
-    std::vector<EffectParameter> getParameters() override
-    {
-        return {
-            { "Threshold", threshold, -60.0f, 0.0f, [this](float v) { threshold=v; limiter.setThreshold(v); } },
-            { "Release", release, 0.0f, 500.0f, [this](float v) { release=v; limiter.setRelease(v); } }
-        };
-    }
-
-    std::string getName() const override { return "Limiter"; }
 
 private:
     juce::dsp::Limiter<float> limiter;
-    float threshold = -0.1f;
-    float release = 10.0f;
 };

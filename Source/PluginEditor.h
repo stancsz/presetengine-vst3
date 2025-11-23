@@ -3,42 +3,46 @@
 #include <JuceHeader.h>
 #include "PluginProcessor.h"
 #include "ModernLookAndFeel.h"
-#include "VisualControls.h"
 
 //==============================================================================
 /**
 */
-class YamlPresetPluginAudioProcessorEditor  : public juce::AudioProcessorEditor
+class PresetEngineAudioProcessorEditor  : public juce::AudioProcessorEditor
 {
 public:
-    YamlPresetPluginAudioProcessorEditor (YamlPresetPluginAudioProcessor&);
-    ~YamlPresetPluginAudioProcessorEditor() override;
+    PresetEngineAudioProcessorEditor (PresetEngineAudioProcessor&);
+    ~PresetEngineAudioProcessorEditor() override;
 
     //==============================================================================
     void paint (juce::Graphics&) override;
     void resized() override;
 
 private:
-    void updateView();
+    void updateViewVisibility();
+    void rebuildUi();
 
-    YamlPresetPluginAudioProcessor& audioProcessor;
-
+    PresetEngineAudioProcessor& audioProcessor;
     ModernLookAndFeel lookAndFeel;
 
     juce::Label     titleLabel;
 
-    // Mode Toggle
+    // View Toggle
     juce::TextButton toggleViewButton;
     bool isVisualMode = false;
 
-    // Code View
+    // Visual View Components
+    juce::Viewport  viewport;
+    std::unique_ptr<juce::Component> container;
+    juce::OwnedArray<juce::Component> effectComponents;
+
+    // Code View Components
+    juce::ComboBox  languageBox;
+    juce::TextButton exampleButton;
     juce::TextEditor codeEditor;
     juce::TextButton applyButton;
 
-    // Visual View
-    VisualControlsComponent visualControls;
-
+    // Status
     juce::Label     statusLabel;
 
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (YamlPresetPluginAudioProcessorEditor)
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (PresetEngineAudioProcessorEditor)
 };
