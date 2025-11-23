@@ -1,6 +1,6 @@
 # PresetEngine SDK
 
-This directory contains Software Development Kits (SDKs) for programmatically generating PresetEngine configurations.
+This directory contains the Python Software Development Kit (SDK) for programmatically generating PresetEngine configurations.
 
 ## Overview
 
@@ -10,9 +10,7 @@ Instead of manually writing YAML/JSON/XML, you can use these SDKs to:
 - Build algorithmic effect chains
 - Integrate preset generation into your workflow tools
 
-## Available SDKs
-
-### Python SDK (`python/`)
+## Python SDK (`python/`)
 
 **Installation:**
 ```bash
@@ -42,42 +40,9 @@ python sdk/python/example_generator.py
 
 This will output a YAML preset that you can copy and paste directly into the PresetEngine plugin.
 
----
-
-### Go SDK (`go/`)
-
-**Usage:**
-```go
-package main
-
-import (
-    "encoding/json"
-    "fmt"
-)
-
-func main() {
-    chain := []Effect{
-        {"type": "Gain", "gain_db": -6.0},
-        {"type": "Filter", "mode": "LowPass", "frequency": 1000.0},
-    }
-    
-    b, _ := json.MarshalIndent(chain, "", "  ")
-    fmt.Println(string(b))
-}
-```
-
-**Run the example:**
-```bash
-go run sdk/go/example_generator.go
-```
-
-This will output a JSON preset that you can copy and paste directly into the PresetEngine plugin.
-
----
-
 ## Workflow
 
-1. **Write your generator script** using Python or Go SDK
+1. **Write your generator script** using the Python SDK
 2. **Run the script** to generate YAML/JSON output
 3. **Copy the output**
 4. **Paste into PresetEngine plugin** and click "Apply"
@@ -135,10 +100,3 @@ def RandomFilterChain(count=5):
 ```
 
 ## Contributing
-
-To add support for another language:
-1. Create a new directory: `sdk/<language>/`
-2. Implement the core types: `Effect`, `Parameter`, `Chain`
-3. Provide serialization to YAML or JSON
-4. Add an example generator script
-5. Update this README

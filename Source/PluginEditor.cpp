@@ -241,7 +241,6 @@ PresetEngineAudioProcessorEditor::PresetEngineAudioProcessorEditor (PresetEngine
     languageBox.addItem("JSON", 2);
     languageBox.addItem("XML", 3);
     languageBox.addItem("Python", 4);
-    languageBox.addItem("Go", 5);
     languageBox.setSelectedId(1); // Default YAML
     addAndMakeVisible(languageBox);
 
@@ -293,7 +292,7 @@ PresetEngineAudioProcessorEditor::PresetEngineAudioProcessorEditor (PresetEngine
             example = "# SDK USAGE - Run this Python script to GENERATE a preset file\n"
                      "# Then load the generated .yaml/.json file into the plugin\n"
                      "#\n"
-                     "# See: example/python_generator.py\n"
+                     "# See: sdk/python/example_generator.py\n"
                      "\n"
                      "from preset_engine import Chain, Gain, Filter\n"
                      "\n"
@@ -303,26 +302,6 @@ PresetEngineAudioProcessorEditor::PresetEngineAudioProcessorEditor (PresetEngine
                      "\n"
                      "# Output YAML to paste into plugin:\n"
                      "print(chain.to_yaml())";
-        }
-        else if (id == 5) // Go - SDK Generator (NOT for direct paste)
-        {
-            example = "// SDK USAGE - Compile and run this Go program to GENERATE a preset\n"
-                     "// Then load the generated .json file into the plugin\n"
-                     "//\n"
-                     "// See: example/go_generator.go\n"
-                     "\n"
-                     "package main\n"
-                     "\n"
-                     "import \"encoding/json\"\n"
-                     "\n"
-                     "func main() {\n"
-                     "    chain := []Effect{\n"
-                     "        {\"type\": \"Gain\", \"gain_db\": -6.0},\n"
-                     "        {\"type\": \"Filter\", \"mode\": \"LowPass\"},\n"
-                     "    }\n"
-                     "    b, _ := json.MarshalIndent(chain, \"\", \"  \")\n"
-                     "    fmt.Println(string(b))\n"
-                     "}";
         }
         codeEditor.setText(example);
     };
