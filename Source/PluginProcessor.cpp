@@ -102,6 +102,9 @@ void PresetEngineAudioProcessor::prepareToPlay (double sampleRate, int samplesPe
     spec.numChannels = getTotalNumOutputChannels();
 
     effectChain.prepare(spec);
+    
+    inputVisuals.setSize(2048);
+    outputVisuals.setSize(2048);
 }
 
 void PresetEngineAudioProcessor::releaseResources()
@@ -137,7 +140,9 @@ void PresetEngineAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
         buffer.clear (i, 0, buffer.getNumSamples());
 
+    inputVisuals.push(buffer);
     effectChain.process(buffer);
+    outputVisuals.push(buffer);
 }
 
 //==============================================================================

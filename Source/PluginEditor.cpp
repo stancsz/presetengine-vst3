@@ -44,8 +44,13 @@ public:
             
             if (!config.hasProperty("min") && !config.hasProperty("max"))
             {
-                min = 0.0f; max = std::max(1.0f, std::abs(val) * 2.0f);
-                if (max == 0) max = 1.0f;
+                if (val < 0) {
+                    min = std::min(-60.0f, val * 2.0f);
+                    max = std::max(0.0f, std::abs(val));
+                } else {
+                    min = 0.0f;
+                    max = std::max(1.0f, val * 2.0f);
+                }
             }
 
             s->setRange(min, max);
@@ -222,7 +227,7 @@ private:
 
 //==============================================================================
 PresetEngineAudioProcessorEditor::PresetEngineAudioProcessorEditor (PresetEngineAudioProcessor& p)
-    : AudioProcessorEditor (&p), audioProcessor (p)
+    : AudioProcessorEditor (&p), audioProcessor (p), spectrumComponent(p)
 {
     // Apply custom look and feel
     setLookAndFeel(&lookAndFeel);

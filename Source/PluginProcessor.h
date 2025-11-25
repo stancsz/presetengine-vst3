@@ -47,6 +47,38 @@ public:
     juce::String getCurrentConfig() const { return currentConfigCode; }
     juce::ValueTree getCurrentConfigTree() const { return effectChain.getCurrentConfig(); }
 
+    // Visualization
+    struct VisualBuffer {
+        std::vector<float> data;
+        std::atomic<int> writePos { 0 };
+        
+        void setSize(int size) {
+            data.resize(size, 0.0f);
+            writePos = 0;
+        }
+        
+        void push(const juce::AudioBuffer<float>& buffer) {
+            int numSamples = buffer.getNumSamples();
+            int size = (int)data.size();
+            if (size == 0) return;
+            
+            // Just take channel 0 for simplicity
+            auto* channelData = buffer.getReadPointer(0);
+            
+            int currentPos = writePos.load(std::memory_order_relaxed);
+            
+            for (int i = 0; i < numSamples; ++i) {
+                data[currentPos] = channelData[i];
+                currentPos = (currentPos + 1) % size;
+            }
+            
+            writePos.store(currentPos, std::memory_order_relaxed);
+        }
+    };
+    
+    VisualBuffer inputVisuals;
+    VisualBuffer outputVisuals;
+
 private:
     juce::AudioProcessorValueTreeState apvts;
     juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
