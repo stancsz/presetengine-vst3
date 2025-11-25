@@ -17,18 +17,18 @@
 // Internal Node Graph Types
 // ============================
 
+struct EffectChain::Node
+{
+    virtual ~Node() = default;
+    virtual void prepare(const juce::dsp::ProcessSpec& spec) = 0;
+    virtual void process(juce::AudioBuffer<float>& buffer) = 0;
+    virtual void reset() = 0;
+};
+
 namespace {
-    struct Node
-    {
-        virtual ~Node() = default;
-        virtual void prepare(const juce::dsp::ProcessSpec& spec) = 0;
-        virtual void process(juce::AudioBuffer<float>& buffer) = 0;
-        virtual void reset() = 0;
-    };
+    using NodePtr = std::unique_ptr<EffectChain::Node>;
 
-    using NodePtr = std::unique_ptr<Node>;
-
-    struct EffectNode : public Node
+    struct EffectNode : public EffectChain::Node
     {
         explicit EffectNode(std::unique_ptr<AudioEffect> e)
             : effect(std::move(e)) {}
@@ -58,7 +58,7 @@ namespace {
         std::unique_ptr<AudioEffect> effect;
     };
 
-    struct GroupNode : public Node
+    struct GroupNode : public EffectChain::Node
     {
         enum class Mode { Series, Parallel };
 
@@ -97,7 +97,7 @@ namespace {
 
             for (auto& child : children)
             {
-                tempBuffer.makeCopyOf(buffer, true, 0, numSamples);
+                tempBuffer.makeCopyOf(buffer, true);
                 child->process(tempBuffer);
 
                 for (int ch = 0; ch < numChannels; ++ch)
@@ -112,7 +112,7 @@ namespace {
             {
                 for (auto& child : children)
                 {
-                    tempBuffer.makeCopyOf(buffer, true, 0, numSamples);
+                    tempBuffer.makeCopyOf(buffer, true);
                     child->process(tempBuffer);
 
                     for (int ch = 0; ch < numChannels; ++ch)
@@ -145,7 +145,7 @@ namespace {
         
         if (node.IsScalar())
         {
-            tree.setProperty("value", node.as<std::string>(), nullptr);
+            tree.setProperty("value", juce::String(node.as<std::string>()), nullptr);
         }
         else if (node.IsSequence())
         {
@@ -166,11 +166,11 @@ namespace {
                     // simple heuristic for types
                     try
                     {
-                        tree.setProperty(key, val.as<float>(), nullptr);
+                        tree.setProperty(juce::Identifier(key), juce::var(val.as<float>()), nullptr);
                     }
                     catch (...)
                     {
-                        tree.setProperty(key, val.as<std::string>(), nullptr);
+                        tree.setProperty(juce::Identifier(key), juce::String(val.as<std::string>()), nullptr);
                     }
                 }
                 else
@@ -184,7 +184,7 @@ namespace {
                     else
                     {
                         // Recurse for Maps and other Sequences
-                        tree.addChild(yamlToValueTree(val, key), -1, nullptr);
+                        tree.addChild(yamlToValueTree(val, juce::Identifier(key)), -1, nullptr);
                     }
                 }
             }

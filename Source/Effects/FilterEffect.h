@@ -78,7 +78,7 @@ private:
 
     // Use ::Ptr type for the state so updates to 'state' are seen by 'filter'
     typename juce::dsp::IIR::Coefficients<float>::Ptr state = juce::dsp::IIR::Coefficients<float>::makeLowPass(44100.0, 1000.0f);
-    juce::dsp::ProcessorDuplicator<juce::dsp::IIR::Filter<float>, juce::dsp::IIR::Coefficients<float>::Ptr> filter;
+    juce::dsp::ProcessorDuplicator<juce::dsp::IIR::Filter<float>, juce::dsp::IIR::Coefficients<float>> filter;
 
     double sampleRate = 0;
     std::string type = "LowPass";

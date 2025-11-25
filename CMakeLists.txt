@@ -67,6 +67,7 @@ target_compile_definitions(PresetEngine PUBLIC
     JUCE_USE_CURL=0
     NOMINMAX
     WIN32_LEAN_AND_MEAN
+    JUCE_VST3_CAN_REPLACE_VST2=0
 )
 
 target_link_libraries(PresetEngine
