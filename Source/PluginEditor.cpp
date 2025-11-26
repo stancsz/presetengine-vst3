@@ -368,6 +368,7 @@ PresetEngineAudioProcessorEditor::PresetEngineAudioProcessorEditor (PresetEngine
     presetBox.addItem("Ethereal Space", 4);
     presetBox.addItem("Mastering Chain", 5);
     presetBox.addItem("Lo-Fi", 6);
+    presetBox.addItem("Complex Group", 7);
     presetBox.setSelectedId(1);
     presetBox.onChange = [this] {
         codeEditor.setText(getPresetSource(presetBox.getSelectedId(), languageBox.getSelectedId()));
@@ -465,6 +466,20 @@ juce::String PresetEngineAudioProcessorEditor::getPresetSource(int presetId, int
             "- type: Distortion\n  drive: 12.0\n"
             "- type: Filter\n  mode: BandPass\n  frequency: 1000.0\n  q: 0.8\n"
             "- type: Delay\n  time: 0.25\n  mix: 0.25";
+        if (presetId == 7) return
+            "# Parallel Processing with a Loop\n"
+            "- type: Group\n"
+            "  mode: Parallel\n"
+            "  children:\n"
+            "    - type: Filter\n"
+            "      mode: LowPass\n"
+            "      frequency: 400.0\n"
+            "    - type: Group\n"
+            "      mode: Series\n"
+            "      repeat: 3\n"
+            "      children:\n"
+            "        - type: Distortion\n"
+            "          drive: 2.0";
             
         // Default
         return "# Paste this directly into the plugin\n"
@@ -503,6 +518,23 @@ juce::String PresetEngineAudioProcessorEditor::getPresetSource(int presetId, int
             "chain.add(Distortion(drive=12.0))\n"
             "chain.add(Filter(mode='BandPass', frequency=1000.0, q=0.8))\n"
             "chain.add(Delay(time=0.25, mix=0.25))\n" + footer;
+        if (presetId == 7) return 
+            "# Nested groups are not yet supported in the simple Python transpiler.\n"
+            "# Please use YAML for complex structures.\n"
+            "print('''\n"
+            "- type: Group\n"
+            "  mode: Parallel\n"
+            "  children:\n"
+            "    - type: Filter\n"
+            "      mode: LowPass\n"
+            "      frequency: 400.0\n"
+            "    - type: Group\n"
+            "      mode: Series\n"
+            "      repeat: 3\n"
+            "      children:\n"
+            "        - type: Distortion\n"
+            "          drive: 2.0\n"
+            "''')";
 
         return "# SDK USAGE - Run this Python script to GENERATE a preset file\n"
                "from preset_engine import Chain, Gain\n"

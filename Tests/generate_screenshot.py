@@ -185,7 +185,7 @@ def generate_screenshot():
     
     # Preset
     draw.rectangle([curr_x, controls_y, curr_x + 120, controls_y + 25], fill="#1e1e1e", outline="#555")
-    draw.text((curr_x + 10, controls_y+5), "Default", fill="white", font=font_std)
+    draw.text((curr_x + 10, controls_y+5), "Complex Group", fill="white", font=font_std)
     # Chevron
     draw.line([curr_x + 105, controls_y + 10, curr_x + 110, controls_y + 15, curr_x + 115, controls_y + 10], fill="lightgrey", width=2)
     curr_x += 125
@@ -203,43 +203,50 @@ def generate_screenshot():
     editor_y = controls_y + 35
     editor_h = HEIGHT - editor_y - 10
     draw.rectangle([10, editor_y, 350, editor_y + editor_h], fill=COLOR_EDITOR_BG)
-    code_text = """- type: Gain
-  gain_db:
-    value: -6.0
-    ui: Slider
-    style: Rotary
-
-- type: Filter
-  mode: LowPass
-  frequency: 1000.0"""
+    code_text = """# Parallel Processing with a Loop
+- type: Group
+  mode: Parallel
+  children:
+    - type: Filter
+      mode: LowPass
+      frequency: 400.0
+    - type: Group
+      mode: Series
+      repeat: 3
+      children:
+        - type: Distortion
+          drive: 2.0"""
     draw.text((20, editor_y + 10), code_text, fill=COLOR_TEXT_MAIN, font=font_code)
 
     # --- Right Column (FlexBox Layout Simulation) ---
     right_x = 370
     right_w = WIDTH - right_x - 10
     
-    # We will draw the "Default" preset components
-    # Gain Block
+    # Visualizing the nested structure
     y = 50
-    draw.rounded_rectangle([right_x, y, right_x + right_w, y + 110], radius=6, outline="#3a3a3a", fill="#2a2a2a")
-    draw.text((right_x + 10, y + 5), "GAIN", fill=COLOR_ACCENT, font=font_label)
     
-    # Gain Knob
-    draw_rotary(draw, right_x + 20, y + 25, 70, 0.4, "GAIN DB")
-
-    # Filter Block
-    y += 115
-    draw.rounded_rectangle([right_x, y, right_x + right_w, y + 110], radius=6, outline="#3a3a3a", fill="#2a2a2a")
-    draw.text((right_x + 10, y + 5), "FILTER", fill=COLOR_ACCENT, font=font_label)
+    # Root Group
+    draw.rounded_rectangle([right_x, y, right_x + right_w, y + 400], radius=6, outline="#3a3a3a", fill="#222222")
+    draw.text((right_x + 10, y + 5), "GROUP", fill=COLOR_ACCENT, font=font_label)
+    draw.text((right_x + 60, y + 5), "(PARALLEL)", fill=COLOR_TEXT_DIM, font=font_label)
     
-    # Filter Controls
-    # Mode (ComboBox)
-    draw.rectangle([right_x + 20, y + 40, right_x + 110, y + 65], fill="#1e1e1e", outline="#555")
-    draw.text((right_x + 30, y + 45), "LowPass", fill="white", font=font_std)
-    draw.text((right_x + 20 + 35, y + 70), "MODE", fill=COLOR_TEXT_DIM, font=font_label)
-
-    # Freq Knob
-    draw_rotary(draw, right_x + 130, y + 25, 70, 0.6, "FREQUENCY")
+    # Child 1: Filter
+    y_child = y + 30
+    draw.rounded_rectangle([right_x + 20, y_child, right_x + right_w - 20, y_child + 100], radius=6, outline="#3a3a3a", fill="#2a2a2a")
+    draw.text((right_x + 30, y_child + 5), "FILTER", fill=COLOR_ACCENT, font=font_label)
+    draw_rotary(draw, right_x + 40, y_child + 25, 60, 0.3, "FREQ")
+    
+    # Child 2: Group (Series)
+    y_child += 110
+    draw.rounded_rectangle([right_x + 20, y_child, right_x + right_w - 20, y_child + 150], radius=6, outline="#3a3a3a", fill="#252525")
+    draw.text((right_x + 30, y_child + 5), "GROUP", fill=COLOR_ACCENT, font=font_label)
+    draw.text((right_x + 80, y_child + 5), "(SERIES, x3)", fill=COLOR_TEXT_DIM, font=font_label)
+    
+    # Grandchild: Distortion
+    y_gchild = y_child + 30
+    draw.rounded_rectangle([right_x + 40, y_gchild, right_x + right_w - 40, y_gchild + 100], radius=6, outline="#3a3a3a", fill="#2a2a2a")
+    draw.text((right_x + 50, y_gchild + 5), "DISTORTION", fill=COLOR_ACCENT, font=font_label)
+    draw_rotary(draw, right_x + 60, y_gchild + 25, 60, 0.2, "DRIVE")
 
     img.save("screenshot.png")
     print("Screenshot generated: screenshot.png")

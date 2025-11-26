@@ -87,3 +87,64 @@ target_link_libraries(PresetEngine
 target_compile_features(PresetEngine PUBLIC cxx_std_17)
 
 juce_generate_juce_header(PresetEngine)
+
+# --- Screenshot Test ---
+juce_add_gui_app(ScreenshotTest
+    PRODUCT_NAME "ScreenshotTest"
+    VERSION 1.0.0
+)
+
+target_sources(ScreenshotTest
+    PRIVATE
+        Tests/ScreenshotTest.cpp
+        Source/PluginProcessor.cpp
+        Source/PluginProcessor.h
+        Source/PluginEditor.cpp
+        Source/PluginEditor.h
+        Source/AudioEffect.h
+        Source/EffectChain.h
+        Source/EffectChain.cpp
+        Source/Effects/GainEffect.h
+        Source/Effects/FilterEffect.h
+        Source/Effects/CompressorEffect.h
+        Source/Effects/LimiterEffect.h
+        Source/Effects/ReverbEffect.h
+        Source/Effects/ChorusEffect.h
+        Source/Effects/DistortionEffect.h
+        Source/Effects/PhaserEffect.h
+        Source/Effects/DelayEffect.h
+        Source/Effects/NoiseGateEffect.h
+        Source/Effects/LadderFilterEffect.h
+        Source/Effects/PannerEffect.h
+        Source/ModernLookAndFeel.h
+)
+
+target_include_directories(ScreenshotTest PRIVATE Source)
+
+target_link_libraries(ScreenshotTest
+    PRIVATE
+        juce::juce_audio_utils
+        juce::juce_audio_processors
+        juce::juce_core
+        juce::juce_data_structures
+        juce::juce_events
+        juce::juce_graphics
+        juce::juce_gui_basics
+        juce::juce_gui_extra
+        juce::juce_dsp
+        yaml-cpp
+)
+
+target_compile_definitions(ScreenshotTest PUBLIC
+    JUCE_WEB_BROWSER=0
+    JUCE_USE_CURL=0
+    NOMINMAX
+    WIN32_LEAN_AND_MEAN
+    JucePlugin_Name="Preset Engine"
+    JucePlugin_VersionString="0.0.1"
+    JucePlugin_WantsMidiInput=0
+    JucePlugin_ProducesMidiOutput=0
+    JucePlugin_IsMidiEffect=0
+    JucePlugin_IsSynth=0
+    JucePlugin_EditorRequiresKeyboardFocus=1
+)
