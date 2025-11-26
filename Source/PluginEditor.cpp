@@ -330,54 +330,24 @@ PresetEngineAudioProcessorEditor::PresetEngineAudioProcessorEditor (PresetEngine
     languageBox.addItem("XML", 3);
     languageBox.addItem("Python", 4);
     languageBox.setSelectedId(1);
+    languageBox.onChange = [this] { presetBox.onChange(); }; // Trigger update
     addAndMakeVisible(languageBox);
 
-    exampleButton.setButtonText("Load Example");
+    presetBox.addItem("Default", 1);
+    presetBox.addItem("Vocal Strip", 2);
+    presetBox.addItem("Drum Smash", 3);
+    presetBox.addItem("Ethereal Space", 4);
+    presetBox.addItem("Mastering Chain", 5);
+    presetBox.addItem("Lo-Fi", 6);
+    presetBox.setSelectedId(1);
+    presetBox.onChange = [this] {
+        codeEditor.setText(getPresetSource(presetBox.getSelectedId(), languageBox.getSelectedId()));
+    };
+    addAndMakeVisible(presetBox);
+
+    exampleButton.setButtonText("Reset");
     exampleButton.onClick = [this] {
-        int id = languageBox.getSelectedId();
-        juce::String example = "";
-        if (id == 1) // YAML
-        {
-            example = "# Paste this directly into the plugin\n"
-                     "- type: Gain\n"
-                     "  gain_db:\n"
-                     "    value: -6.0\n"
-                     "    ui: Slider\n"
-                     "    style: Rotary\n"
-                     "\n"
-                     "- type: Filter\n"
-                     "  mode: LowPass\n"
-                     "  frequency: 1000.0";
-        }
-        else if (id == 2) // JSON
-        {
-             example = "[\n"
-                     "  {\n"
-                     "    \"type\": \"Gain\",\n"
-                     "    \"gain_db\": {\n"
-                     "      \"value\": -6.0,\n"
-                     "      \"ui\": \"Slider\"\n"
-                     "    }\n"
-                     "  }\n"
-                     "]";
-        }
-        else if (id == 3) // XML
-        {
-             example = "<EffectChain>\n"
-                     "  <Effect type=\"Gain\">\n"
-                     "    <gain_db value=\"-6.0\" ui=\"Slider\"/>\n"
-                     "  </Effect>\n"
-                     "</EffectChain>";
-        }
-        else if (id == 4) // Python
-        {
-             example = "# SDK USAGE - Run this Python script to GENERATE a preset file\n"
-                     "from preset_engine import Chain, Gain\n"
-                     "chain = Chain()\n"
-                     "chain.add(Gain(db=-6.0))\n"
-                     "print(chain.to_yaml())";
-        }
-        codeEditor.setText(example);
+        presetBox.setSelectedId(1);
     };
     addAndMakeVisible(exampleButton);
 
@@ -387,7 +357,7 @@ PresetEngineAudioProcessorEditor::PresetEngineAudioProcessorEditor (PresetEngine
     codeEditor.setFont(juce::Font(juce::Font::getDefaultMonospacedFontName(), 13.0f, juce::Font::plain));
     
     if (audioProcessor.getCurrentConfig().isEmpty())
-        exampleButton.triggerClick();
+        presetBox.onChange();
     else
         codeEditor.setText(audioProcessor.getCurrentConfig());
         
@@ -437,6 +407,83 @@ PresetEngineAudioProcessorEditor::~PresetEngineAudioProcessorEditor()
 {
     setLookAndFeel(nullptr);
     viewport.setViewedComponent(nullptr, false);
+}
+
+juce::String PresetEngineAudioProcessorEditor::getPresetSource(int presetId, int languageId)
+{
+    // 1=YAML, 2=JSON, 3=XML, 4=Python
+    // Presets: 1=Default, 2=Vocal, 3=Drum, 4=Space, 5=Master, 6=LoFi
+
+    if (languageId == 1) // YAML
+    {
+        if (presetId == 2) return 
+            "- type: NoiseGate\n  threshold: -60.0\n  ratio: 10.0\n"
+            "- type: Filter\n  mode: HighPass\n  frequency: 80.0\n"
+            "- type: Compressor\n  threshold: -20.0\n  ratio: 4.0\n  attack: 5.0\n  release: 100.0";
+        if (presetId == 3) return
+            "- type: Distortion\n  drive: 6.0\n"
+            "- type: Compressor\n  threshold: -15.0\n  ratio: 8.0\n  attack: 1.0\n  release: 50.0\n"
+            "- type: Gain\n  gain_db: 3.0";
+        if (presetId == 4) return
+            "- type: Delay\n  time: 0.4\n  feedback: 0.6\n  mix: 0.4\n"
+            "- type: Reverb\n  room_size: 0.8\n  wet: 0.5\n"
+            "- type: Phaser\n  rate: 0.2\n  depth: 0.7";
+        if (presetId == 5) return
+            "- type: Filter\n  mode: HighPass\n  frequency: 30.0\n"
+            "- type: Compressor\n  threshold: -10.0\n  ratio: 2.0\n  attack: 30.0\n  release: 200.0\n"
+            "- type: Limiter\n  threshold: -0.1\n  release: 100.0";
+        if (presetId == 6) return
+            "- type: Distortion\n  drive: 12.0\n"
+            "- type: Filter\n  mode: BandPass\n  frequency: 1000.0\n  q: 0.8\n"
+            "- type: Delay\n  time: 0.25\n  mix: 0.25";
+            
+        // Default
+        return "# Paste this directly into the plugin\n"
+               "- type: Gain\n"
+               "  gain_db:\n"
+               "    value: -6.0\n"
+               "    ui: Slider\n"
+               "    style: Rotary\n"
+               "\n"
+               "- type: Filter\n"
+               "  mode: LowPass\n"
+               "  frequency: 1000.0";
+    }
+    else if (languageId == 4) // Python
+    {
+        juce::String header = "from preset_engine import Chain, Gain, Filter, Compressor, Limiter, Delay, Reverb, Distortion, NoiseGate, Phaser\nchain = Chain()\n";
+        juce::String footer = "print(chain.to_yaml())";
+        
+        if (presetId == 2) return header + 
+            "chain.add(NoiseGate(threshold=-60.0, ratio=10.0))\n"
+            "chain.add(Filter(mode='HighPass', frequency=80.0))\n"
+            "chain.add(Compressor(threshold=-20.0, ratio=4.0, attack=5.0, release=100.0))\n" + footer;
+        if (presetId == 3) return header +
+            "chain.add(Distortion(drive=6.0))\n"
+            "chain.add(Compressor(threshold=-15.0, ratio=8.0, attack=1.0, release=50.0))\n"
+            "chain.add(Gain(db=3.0))\n" + footer;
+        if (presetId == 4) return header +
+            "chain.add(Delay(time=0.4, feedback=0.6, mix=0.4))\n"
+            "chain.add(Reverb(room_size=0.8, wet=0.5))\n"
+            "chain.add(Phaser(rate=0.2, depth=0.7))\n" + footer;
+        if (presetId == 5) return header +
+            "chain.add(Filter(mode='HighPass', frequency=30.0))\n"
+            "chain.add(Compressor(threshold=-10.0, ratio=2.0, attack=30.0, release=200.0))\n"
+            "chain.add(Limiter(threshold=-0.1, release=100.0))\n" + footer;
+        if (presetId == 6) return header +
+            "chain.add(Distortion(drive=12.0))\n"
+            "chain.add(Filter(mode='BandPass', frequency=1000.0, q=0.8))\n"
+            "chain.add(Delay(time=0.25, mix=0.25))\n" + footer;
+
+        return "# SDK USAGE - Run this Python script to GENERATE a preset file\n"
+               "from preset_engine import Chain, Gain\n"
+               "chain = Chain()\n"
+               "chain.add(Gain(db=-6.0))\n"
+               "print(chain.to_yaml())";
+    }
+    
+    // Fallback for JSON/XML (Just minimal support for now)
+    return "Not implemented for this language yet.";
 }
 
 juce::String PresetEngineAudioProcessorEditor::parsePythonToYaml(const juce::String& pythonCode)
@@ -572,11 +619,13 @@ void PresetEngineAudioProcessorEditor::resized()
     auto controlsArea = leftArea.removeFromTop(40);
     controlsArea.reduce(10, 5);
     
-    languageBox.setBounds(controlsArea.removeFromLeft(80));
+    languageBox.setBounds(controlsArea.removeFromLeft(70));
     controlsArea.removeFromLeft(5);
-    exampleButton.setBounds(controlsArea.removeFromLeft(100));
+    presetBox.setBounds(controlsArea.removeFromLeft(120));
     controlsArea.removeFromLeft(5);
-    applyButton.setBounds(controlsArea.removeFromRight(80));
+    exampleButton.setBounds(controlsArea.removeFromLeft(60));
+    controlsArea.removeFromLeft(5);
+    applyButton.setBounds(controlsArea.removeFromRight(70));
     statusLabel.setBounds(controlsArea);
     
     // Bottom: Code Editor

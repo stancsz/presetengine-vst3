@@ -48,36 +48,43 @@ public:
     juce::ValueTree getCurrentConfigTree() const { return effectChain.getCurrentConfig(); }
 
     // Visualization
-    struct VisualBuffer {
-        std::vector<float> data;
-        std::atomic<int> writePos { 0 };
+    // Visualization - FFT
+    enum
+    {
+        fftOrder = 11,
+        fftSize = 1 << fftOrder
+    };
+
+    struct FFTData {
+        juce::dsp::FFT forwardFFT { fftOrder };
+        juce::dsp::WindowingFunction<float> window { fftSize, juce::dsp::WindowingFunction<float>::hann };
         
-        void setSize(int size) {
-            data.resize(size, 0.0f);
-            writePos = 0;
-        }
+        std::vector<float> fifo;
+        std::vector<float> fftData;
+        int fifoIndex = 0;
+        bool nextFFTBlockReady = false;
         
-        void push(const juce::AudioBuffer<float>& buffer) {
-            int numSamples = buffer.getNumSamples();
-            int size = (int)data.size();
-            if (size == 0) return;
-            
-            // Just take channel 0 for simplicity
-            auto* channelData = buffer.getReadPointer(0);
-            
-            int currentPos = writePos.load(std::memory_order_relaxed);
-            
-            for (int i = 0; i < numSamples; ++i) {
-                data[currentPos] = channelData[i];
-                currentPos = (currentPos + 1) % size;
+        FFTData() : fifo(fftSize), fftData(2 * fftSize) {}
+        
+        void pushNextSample(float sample)
+        {
+            if (fifoIndex == fftSize)
+            {
+                if (!nextFFTBlockReady)
+                {
+                    std::fill(fftData.begin(), fftData.end(), 0.0f);
+                    std::copy(fifo.begin(), fifo.end(), fftData.begin());
+                    nextFFTBlockReady = true;
+                }
+                fifoIndex = 0;
             }
             
-            writePos.store(currentPos, std::memory_order_relaxed);
+            fifo[fifoIndex++] = sample;
         }
     };
     
-    VisualBuffer inputVisuals;
-    VisualBuffer outputVisuals;
+    FFTData inputFFT;
+    FFTData outputFFT;
 
 private:
     juce::AudioProcessorValueTreeState apvts;

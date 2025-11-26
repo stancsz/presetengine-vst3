@@ -102,9 +102,6 @@ void PresetEngineAudioProcessor::prepareToPlay (double sampleRate, int samplesPe
     spec.numChannels = getTotalNumOutputChannels();
 
     effectChain.prepare(spec);
-    
-    inputVisuals.setSize(2048);
-    outputVisuals.setSize(2048);
 }
 
 void PresetEngineAudioProcessor::releaseResources()
@@ -140,9 +137,23 @@ void PresetEngineAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
         buffer.clear (i, 0, buffer.getNumSamples());
 
-    inputVisuals.push(buffer);
+    // Push to Input FFT
+    if (totalNumInputChannels > 0)
+    {
+        auto* channelData = buffer.getReadPointer(0);
+        for (int i = 0; i < buffer.getNumSamples(); ++i)
+            inputFFT.pushNextSample(channelData[i]);
+    }
+
     effectChain.process(buffer);
-    outputVisuals.push(buffer);
+    
+    // Push to Output FFT
+    if (totalNumOutputChannels > 0)
+    {
+        auto* channelData = buffer.getReadPointer(0);
+        for (int i = 0; i < buffer.getNumSamples(); ++i)
+            outputFFT.pushNextSample(channelData[i]);
+    }
 }
 
 //==============================================================================

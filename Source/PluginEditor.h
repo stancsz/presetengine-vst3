@@ -15,7 +15,7 @@ class SpectrumComponent : public juce::Component, public juce::Timer
 public:
     SpectrumComponent(PresetEngineAudioProcessor& p) : processor(p)
     {
-        startTimerHz(60); // Smoother animation
+        startTimerHz(30);
     }
 
     ~SpectrumComponent() override
@@ -25,68 +25,66 @@ public:
 
     void timerCallback() override
     {
-        repaint();
+        if (processor.inputFFT.nextFFTBlockReady)
+        {
+            processor.inputFFT.forwardFFT.performFrequencyOnlyForwardTransform(processor.inputFFT.fftData.data());
+            processor.inputFFT.nextFFTBlockReady = false;
+            repaint();
+        }
+        
+        if (processor.outputFFT.nextFFTBlockReady)
+        {
+            processor.outputFFT.forwardFFT.performFrequencyOnlyForwardTransform(processor.outputFFT.fftData.data());
+            processor.outputFFT.nextFFTBlockReady = false;
+            repaint();
+        }
     }
 
     void paint(juce::Graphics& g) override
     {
-        auto area = getLocalBounds().toFloat();
-        float w = area.getWidth();
-        float h = area.getHeight();
-        float midY = h * 0.5f;
-
-        // Background
-        g.setColour(juce::Colour(0xff121212));
-        g.fillRect(area);
-
-        // Grid (Subtle)
-        g.setColour(juce::Colours::white.withAlpha(0.05f));
-        g.drawHorizontalLine((int)midY, 0.0f, w);
-
-        // Helper to draw waveform
-        auto drawWaveform = [&](const std::vector<float>& data, int writePos, juce::Colour color, float alpha)
+        g.fillAll(juce::Colour(0xff121212));
+        
+        g.setOpacity(1.0f);
+        
+        auto drawSpectrum = [&](const std::vector<float>& data, juce::Colour color)
         {
-            if (data.empty()) return;
-
-            g.setColour(color.withAlpha(alpha));
             juce::Path path;
+            path.startNewSubPath(0, (float)getHeight());
             
-            // Simple trigger logic: find first zero crossing
-            int startIdx = 0;
-            int size = (int)data.size();
+            const float mindB = -100.0f;
+            const float maxdB = 0.0f;
+            const int fftSize = PresetEngineAudioProcessor::fftSize;
+            const int halfSize = fftSize / 2;
             
-            // Try to find a stable trigger point in the last N samples
-            // This is a naive trigger but better than rolling
-            // Actually, just drawing the buffer as a circular buffer is easiest for now
-            // To make it look like a "window", we start from writePos (oldest sample)
-            
-            path.startNewSubPath(0, midY);
-            
-            int readPos = writePos;
-            
-            // Draw 512 samples or so
-            int numToDraw = std::min(size, 512);
-            float xInc = w / (float)numToDraw;
-            
-            for (int i = 0; i < numToDraw; ++i)
+            for (int i = 0; i < halfSize; ++i)
             {
-                float sample = data[readPos];
-                float y = midY - (sample * h * 0.4f); // Scale amplitude
+                float skewedProportionX = 1.0f - std::exp(std::log(1.0f - (float)i / (float)halfSize) * 0.2f);
                 
-                if (i == 0) path.startNewSubPath(0, y);
-                else path.lineTo((float)i * xInc, y);
+                // Map skewed proportion to FFT bin index
+                float fftDataIndex = juce::jlimit(0.0f, (float)halfSize, skewedProportionX * (float)halfSize);
                 
-                readPos = (readPos + 1) % size;
+                // Calculate magnitude in dB
+                float magnitude = data[(int)fftDataIndex];
+                float levelDb = juce::Decibels::gainToDecibels(magnitude) - juce::Decibels::gainToDecibels((float)fftSize);
+                
+                // Map dB to height (0.0 to 1.0)
+                float level = juce::jmap(juce::jlimit(mindB, maxdB, levelDb), mindB, maxdB, 0.0f, 1.0f);
+                
+                path.lineTo(skewedProportionX * (float)getWidth(), (float)getHeight() - level * (float)getHeight());
             }
             
-            g.strokePath(path, juce::PathStrokeType(1.5f));
+            g.setColour(color);
+            g.strokePath(path, juce::PathStrokeType(1.0f));
+            
+            // Fill
+            path.lineTo((float)getWidth(), (float)getHeight());
+            path.closeSubPath();
+            g.setColour(color.withAlpha(0.2f));
+            g.fillPath(path);
         };
 
-        // Draw Input (Grey)
-        drawWaveform(processor.inputVisuals.data, processor.inputVisuals.writePos.load(), juce::Colours::grey, 0.5f);
-
-        // Draw Output (Blue)
-        drawWaveform(processor.outputVisuals.data, processor.outputVisuals.writePos.load(), juce::Colour(0xff00bcd4), 0.9f);
+        drawSpectrum(processor.inputFFT.fftData, juce::Colours::grey);
+        drawSpectrum(processor.outputFFT.fftData, juce::Colour(0xff00bcd4));
     }
 
 private:
@@ -121,10 +119,16 @@ private:
     SpectrumComponent spectrumComponent;
 
     juce::ComboBox  languageBox;
-    juce::TextButton exampleButton;
+    juce::ComboBox  presetBox;
+    juce::TextButton exampleButton; // Keep for manual trigger if needed, or remove? Let's keep as "Reset" or similar, or just remove.
+    // Actually, let's keep exampleButton but rename/repurpose or just rely on combo box change.
+    // The user code uses exampleButton, I'll keep it for now to minimize diff, but maybe hide it or make it "Load".
+    
     juce::TextEditor codeEditor;
     juce::TextButton applyButton;
     juce::Label     statusLabel;
+
+    juce::String getPresetSource(int presetId, int languageId);
 
     // Right Column Components
     juce::Viewport  viewport;
