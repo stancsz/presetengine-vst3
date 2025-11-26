@@ -332,10 +332,17 @@ PresetEngineAudioProcessorEditor::PresetEngineAudioProcessorEditor (PresetEngine
     setSize (900, 500); // Widescreen modern aspect
 
     // Header
-    titleLabel.setText("PRESET ENGINE 2026", juce::dontSendNotification);
-    titleLabel.setFont(juce::Font(24.0f, juce::Font::bold));
+    titleLabel.setText("Preset Engine", juce::dontSendNotification);
+    titleLabel.setFont(juce::Font(20.0f, juce::Font::bold));
     titleLabel.setColour(juce::Label::textColourId, juce::Colour(0xff00bcd4)); // Cyan title
+    titleLabel.setJustificationType(juce::Justification::centred);
     addAndMakeVisible(titleLabel);
+
+    subtitleLabel.setText("Nap-Tech", juce::dontSendNotification);
+    subtitleLabel.setFont(juce::Font(12.0f, juce::Font::italic));
+    subtitleLabel.setColour(juce::Label::textColourId, juce::Colours::grey);
+    subtitleLabel.setJustificationType(juce::Justification::centred);
+    addAndMakeVisible(subtitleLabel);
 
     // Spectrum
     addAndMakeVisible(spectrumComponent);
@@ -621,7 +628,8 @@ void PresetEngineAudioProcessorEditor::resized()
 
     // Header
     auto header = area.removeFromTop(40);
-    titleLabel.setBounds(header.reduced(10, 0));
+    titleLabel.setBounds(header.removeFromTop(22).reduced(10, 0));
+    subtitleLabel.setBounds(header.reduced(10, 0));
 
     // Split: Left (40%), Right (60%)
     auto leftArea = area.removeFromLeft((int)(getWidth() * 0.4));

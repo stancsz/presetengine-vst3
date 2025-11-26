@@ -1,8 +1,8 @@
 @echo off
 echo Installing VST3 Plugin...
 
-set "SOURCE=build\PresetEngine_artefacts\Release\VST3\PresetEngine.vst3"
-set "DEST=C:\Program Files\Common Files\VST3\PresetEngine.vst3"
+set "SOURCE=build\PresetEngine_artefacts\Release\VST3\Preset Engine.vst3"
+set "DEST=C:\Program Files\Common Files\VST3\Preset Engine.vst3"
 
 if not exist "%SOURCE%" (
     echo Error: Source VST3 not found at "%SOURCE%"

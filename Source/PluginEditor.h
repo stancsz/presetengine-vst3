@@ -114,6 +114,7 @@ private:
     ModernLookAndFeel lookAndFeel;
 
     juce::Label     titleLabel;
+    juce::Label     subtitleLabel;
     
     // Left Column Components
     SpectrumComponent spectrumComponent;

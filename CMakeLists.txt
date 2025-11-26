@@ -27,16 +27,16 @@ FetchContent_MakeAvailable(JUCE yaml-cpp)
 # Note: Building this requires X11 development headers (e.g. libxrandr-dev, libxinerama-dev, etc.) on Linux.
 
 juce_add_plugin(PresetEngine
-    COMPANY_NAME "MyCompany"
+    COMPANY_NAME "Nap-Tech"
     IS_SYNTH FALSE
     NEEDS_MIDI_INPUT FALSE
     NEEDS_MIDI_OUTPUT FALSE
     IS_MIDI_EFFECT FALSE
     EDITOR_WANTS_KEYBOARD_FOCUS TRUE
-    PLUGIN_MANUFACTURER_CODE Juce
-    PLUGIN_CODE Yaml
+    PLUGIN_MANUFACTURER_CODE NAPT
+    PLUGIN_CODE PrEn
     FORMATS VST3 Standalone
-    PRODUCT_NAME "PresetEngine"
+    PRODUCT_NAME "Preset Engine"
 )
 
 target_sources(PresetEngine
